@@ -1,0 +1,39 @@
+library(rtracklayer)
+library(ggplot2)
+
+#import jointly-modeled biological effects on proliferation
+S0X_exp <- makeGRangesFromDataFrame(read.table("~/Desktop/enhancer_analysis/mageck/S0X_mageck_annotate_classified_PCA.txt", header= TRUE), keep.extra.columns= TRUE)
+
+#discard regions that exhibit biological or sign inconsistency across timepoints
+S0X_enhancer <- S0X_exp[S0X_exp$enhancer == 1]
+S0X_enhancer <- S0X_enhancer[S0X_enhancer$t4.phenotype != 'signIR']
+S0X_enhancer <- S0X_enhancer[S0X_enhancer$t8.phenotype != 'signIR']
+S0X_enhancer <- S0X_enhancer[S0X_enhancer$t12.phenotype != 'signIR']
+S0X_enhancer <- S0X_enhancer[S0X_enhancer$t4.phenotype != 'dynamic']
+S0X_enhancer <- S0X_enhancer[S0X_enhancer$t8.phenotype != 'dynamic']
+S0X_enhancer <- S0X_enhancer[S0X_enhancer$t12.phenotype != 'dynamic']
+
+#import predicted transcription-factor binding sites (TFBS)
+jaspar_2018 <- import.bed("~/Desktop/enhancer_analysis/JASPAR_2018/JASPAR2018_hg19_all_chr_enhancer_tile_overlap_filter_ge_400.bed")
+
+#remove special characters from TFBS naming schemes
+jaspar_2018$name <- gsub("[[:punct:]]", "", jaspar_2018$name)
+
+export.bed(jaspar_2018,"~/Desktop/enhancer_analysis/JASPAR_2018/JASPAR2018_hg19_shortName.bed")
+
+#subset TFBS predicted to all sites overlapping regions targeted for genetic disruption
+tf.overlap <- jaspar_2018[jaspar_2018 %over% S0X_enhancer]
+tf.name <- unique(tf.overlap$name)
+
+#assign TF binding to all regions targeted for genetic disruption
+for(tf in tf.name) {
+	mcols(S0X_enhancer)[,tf] <- 0
+	tf.enhancer <- tf.overlap[grep(tf, tf.overlap$name)]
+	mcols(S0X_enhancer[S0X_enhancer %over% tf.enhancer])[,tf] <- 1
+
+
+}
+
+output <- as.data.frame(S0X_enhancer, row.names = NULL)
+
+write.table(output, "/Users/evangeller/Desktop/enhancer_analysis/mageck/S0X_mageck_annotate_classified_PCA_TF_assign.txt", row.names=F, sep=" ", quote= F)
