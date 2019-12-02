@@ -1,6 +1,7 @@
 # README
-##https://github.com/NoonanLab/Geller_et_al_Enhancer_Screen
-Written by Evan Geller (12/2/2019).
+## Written by Evan Geller (12/2/2019)
+https://github.com/NoonanLab/Geller_et_al_Enhancer_Screen
+
 
 ## Data download and modeling
 
